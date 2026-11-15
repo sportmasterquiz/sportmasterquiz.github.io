@@ -517,6 +517,12 @@ body.answerFeedbackOpen{overflow:hidden}
 #quizResult.isMissed .resultPrize .prizeMain{color:#ffb3bb}
 @media(max-width:420px){.resultCard{gap:12px;padding:12px}.resultCard img{width:112px}.resultCard.resultCardWin img{width:138px}}
 </style>
+<style id="answerVerdictStyles">
+/* Esito della risposta scritto in grande nel riquadro che compare dopo ogni prova. */
+.answerFeedbackDialog .feedbackTitle{font-size:2rem;font-weight:900;line-height:1.15}
+.answerFeedbackDialog .feedbackExplanation{font-size:1.08rem}
+@media(max-width:600px){.answerFeedbackDialog .feedbackTitle{font-size:1.7rem}}
+</style>
 <style id="quizGridFitStyles">
 /* Griglia su computer con finestra bassa: domanda, quattro caselle, campo del nome e conferma nella stessa schermata. */
 @media(min-width:601px) and (max-height:820px){
