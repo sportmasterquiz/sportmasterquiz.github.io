@@ -1098,8 +1098,14 @@ function pick(pool,n,level,key,settings={}){
  // Once those are exhausted, new classic questions take precedence over repeats.
  const isSpecial=q=>Boolean(q.format&&q.format!=='classica');
  const specialTotal=pool.filter(isSpecial).length;
- const specialCap=settings.circuitsOnly?n:n>=6?Math.min(3,Math.max(1,Math.floor(specialTotal/2))):1;
- const specialSlots=n>=6?Math.min(2,specialCap):1;let specials=0;
+ const specialHardCap=settings.circuitsOnly?n:n>=6?Math.min(3,Math.max(1,Math.floor(specialTotal/2))):1;
+ // Poche prove speciali o poche foto non devono uscire a ogni partita: compaiono in proporzione
+ // a quante ce ne sono nella scorta (al doppio della quota naturale, finché non sono garantite).
+ // All sports pesca da una scorta ampia e resta com'era.
+ const share=(count,most)=>{if(settings.balanced)return count?most:0;const rate=pool.length?Math.min(most,2*count*n/pool.length):0;return Math.floor(rate)+Number(Math.random()<rate%1)};
+ let specialCap=settings.circuitsOnly?n:share(specialTotal,specialHardCap);
+ const specialSlots=Math.min(n>=6?2:1,specialCap);let specials=0;
+ const photoTurn=share(pool.filter(q=>q.photo).length,1)>0;
  const previousFacts=new Set(historyFor('last_'+key).flatMap(id=>factKeys(byId.get(id)||{id})));
  const specialAvailable=q=>(q.format!=='griglia'||gridCount<1)&&(settings.circuitsOnly||q.format!=='circuito'||circuitCount<1)&&(!isSpecial(q)||(specials<specialCap&&(settings.circuitsOnly||!(q.format==='griglia'?[q.id]:factKeys(q)).some(id=>previousFacts.has(id)))));
  {
@@ -1111,7 +1117,7 @@ function pick(pool,n,level,key,settings={}){
    if(candidates.length)take(candidate(candidates));
   }
  }
- if(n>=3&&!photos){
+ if(n>=3&&!photos&&photoTurn){
   const candidates=options.filter(q=>q.photo&&age(q)<0&&groupAvailable(q)&&specialAvailable(q)&&!factKeys(q).some(id=>usedFacts.has(id))&&(bySport[q.cat]||0)<sportLimit(q.cat));
   if(candidates.length)take(candidate(candidates));
  }
@@ -1123,12 +1129,16 @@ function pick(pool,n,level,key,settings={}){
    if(candidates.length)take(candidate(candidates));
   }
  }
- for(const old of [false,true]){
-  for(let round=0;round<3&&chosen.length<n;round++){
-   while(chosen.length<n){
-    const candidates=options.filter(q=>{
+ // Le domande già viste tornano rimescolate: si pesca a caso nella metà vista da più tempo,
+ // così il secondo giro non ripropone gli stessi gruppi di domande.
+ const seenAges=pool.map(age).filter(value=>value>=0).sort((x,y)=>x-y),olderHalf=seenAges.length?seenAges[Math.floor((seenAges.length-1)/2)]:-1;
+ const fill=(source,old,limit=Infinity)=>{
+  let taken=0;
+  for(let round=0;round<3&&chosen.length<n&&taken<limit;round++){
+   while(chosen.length<n&&taken<limit){
+    let candidates=source.filter(q=>{
      if(!groupAvailable(q)||(age(q)>=0)!==old||chosen.includes(q)||factKeys(q).some(id=>usedFacts.has(id)))return false;
-     if(old&&round<2&&isRecent(q))return false;
+     if(old&&round<2&&(isRecent(q)||age(q)>olderHalf))return false;
      if(q.photo&&photos>=1)return false;
      if(!specialAvailable(q))return false;
      if((bySport[q.cat]||0)>=sportLimit(q.cat))return false;
@@ -1145,11 +1155,18 @@ function pick(pool,n,level,key,settings={}){
      const fmt=q.format||'classica',count=formats[fmt]||0;
      return (count===0&&fmt!=='classica'?20:0)-count*8;
     };
-    candidates.sort((a,b)=>old?(age(a)-age(b))||(priority(b)-priority(a)):priority(b)-priority(a));
-    take(candidate(candidates));
+    if(old&&round<2)candidates=shuffled(candidates).sort((a,b)=>priority(b)-priority(a));
+    else candidates.sort((a,b)=>old?(age(a)-age(b))||(priority(b)-priority(a)):priority(b)-priority(a));
+    take(candidate(candidates));taken++;
    }
   }
- }
+ };
+ fill(options,false);
+ // Finite le classiche nuove, le prove speciali nuove rimaste valgono più di una ripetizione.
+ if(chosen.length<n&&!settings.circuitsOnly){specialCap=specialHardCap;fill(options,false)}
+ // Scorta del livello quasi finita: fino a tre domande classiche nuove dal livello vicino.
+ if(chosen.length<n&&settings.reserve?.length)fill(shuffled(settings.reserve.filter(q=>age(q)<0&&!q.photo&&!isSpecial(q))),false,Math.min(3,Math.floor(n/3)));
+ fill(options,true);
  const ids=[...usedFacts],keys=new Set(ids);
  saveSeen(key,[...seen.filter(id=>!keys.has(id)),...ids]);saveSeen('all_sports',[...globalSeen.filter(id=>!keys.has(id)),...ids]);
  saveSeen('last_'+key,chosen.map(q=>q.id));
@@ -1259,7 +1276,7 @@ function startQuiz(cat,topic=null){
  if(cat==='misto')topic=null;else if(topic!==null&&!category.topics.some(t=>t[0]===topic))return;
  currentCat=cat;currentTopic=topic;playingLevel=cat==='misto'?'medio':isTrainingGame()?trainingLevelFor(cat):levelFor(cat);gameWeighted=0;
  const pool=questions.filter(q=>(isCircuitPractice()||q.level===playingLevel)&&(cat==='misto'||q.cat===cat&&(!topic||topicMatch(q,topic))));
- if(cat!=='misto')current=isCircuitPractice()?pickCircuitPractice():shuffled(pick(pool,10,playingLevel,cat+'_'+(topic||'tutti'),{}));
+ if(cat!=='misto')current=isCircuitPractice()?pickCircuitPractice():shuffled(pick(pool,10,playingLevel,cat+'_'+(topic||'tutti'),{reserve:questions.filter(q=>q.cat===cat&&Math.abs(trophyLevels.indexOf(q.level)-trophyLevels.indexOf(playingLevel))===1&&(!topic||topicMatch(q,topic)))}));
  if(cat==='misto'){current=pickMixedSession(); }else{
  const opening=current.findIndex(q=>(q.format||'classica')==='classica'&&!q.photo);if(opening>0)[current[0],current[opening]]=[current[opening],current[0]];
  if(current.length>1){const activity=current.findIndex(q=>q.format!=='classica');if(activity>1)[current[1],current[activity]]=[current[activity],current[1]];}
