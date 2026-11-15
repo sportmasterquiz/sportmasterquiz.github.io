@@ -517,6 +517,37 @@ body.answerFeedbackOpen{overflow:hidden}
 #quizResult.isMissed .resultPrize .prizeMain{color:#ffb3bb}
 @media(max-width:420px){.resultCard{gap:12px;padding:12px}.resultCard img{width:112px}.resultCard.resultCardWin img{width:138px}}
 </style>
+<style id="quizGridFitStyles">
+/* Griglia su computer con finestra bassa: domanda, quattro caselle, campo del nome e conferma nella stessa schermata. */
+@media(min-width:601px) and (max-height:820px){
+#quizPlay:has(.quizFootballGrid) .formatHeader{margin-bottom:10px}
+#quizPlay:has(.quizFootballGrid) .question{font-size:1.35rem;line-height:1.2;margin-bottom:8px}
+#quizPlay:has(.quizFootballGrid) .formatRule{font-size:.85rem;line-height:1.4;margin:0 0 8px}
+#viewQuiz .quizFootballGrid{margin:0 0 4px}
+#viewQuiz .quizFootballGrid .qgProgress{margin-bottom:2px}
+#viewQuiz .quizFootballGrid .fgTable{border-spacing:6px}
+#viewQuiz .quizFootballGrid .fgTable th{padding:2px 3px;font-size:.95rem}
+#viewQuiz .quizFootballGrid .fgTable thead th{vertical-align:middle}
+#viewQuiz .quizFootballGrid .fgColumnIcon{display:inline;font-size:1.15rem;margin:0 6px 0 0}
+#viewQuiz .quizFootballGrid .fgClubBadge,#viewQuiz .quizFootballGrid .fgColumnClubBadge{display:inline-grid;width:26px;height:26px;font-size:1rem;margin:0 8px 0 0;vertical-align:middle}
+#viewQuiz .quizFootballGrid .fgCell{flex-direction:row;gap:9px;min-height:62px;padding:8px}
+#viewQuiz .quizFootballGrid .fgCell .fgPlus{font-size:1.4rem}
+#viewQuiz .quizFootballGrid .fgEditor{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;margin-top:6px;padding:8px 10px}
+#viewQuiz .quizFootballGrid .fgEditor.hidden{display:none}
+#viewQuiz .quizFootballGrid .fgEditorHead,#viewQuiz .quizFootballGrid .fgInputRow{display:contents}
+#viewQuiz .quizFootballGrid .fgEditorHead label{order:1;font-size:.92rem;max-width:210px}
+#viewQuiz .quizFootballGrid .fgInputRow input{order:2;min-height:44px;padding:8px 10px}
+#viewQuiz .quizFootballGrid .fgInputRow button{order:3;min-height:44px;white-space:nowrap}
+#viewQuiz .quizFootballGrid .fgClose{order:4}
+#viewQuiz .quizFootballGrid .fgSuggestion{order:5;grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:0}
+#viewQuiz .quizFootballGrid .fgSuggestion.hidden{display:none}
+#viewQuiz .quizFootballGrid .fgSuggestion p{margin:0 4px 0 0}
+#viewQuiz .quizFootballGrid .fgSuggestion button{width:auto;margin:0;min-height:40px;padding:6px 12px}
+#viewQuiz .quizFootballGrid .fgMessage{margin:6px 0 0;font-size:.92rem}
+#viewQuiz .quizFootballGrid .qgPoints{margin:6px 0}
+#viewQuiz .quizFootballGrid .activityConfirm{min-height:44px;margin:0}
+}
+</style>
 <style id="quizFitStyles">
 /* Sul telefono la domanda e le risposte stanno nella prima schermata: stessi elementi, spazi più stretti. */
 @media(max-width:600px){
@@ -1406,7 +1437,9 @@ function fitQuizQuestion(){
  const header=document.querySelector('header').getBoundingClientRect().height;
  const last=['answers','photoCredit','questionPhoto','activityError','activityArea','formatRule','questionText'].map(el).find(visible);
  if(!last)return;
- const end=last.getBoundingClientRect().bottom+window.scrollY+10;let top=0;
+ // Nella griglia su computer si lascia già il posto al campo del nome, così la pagina non si sposta quando si apre.
+ const gridForm=el('quizGridForm'),reserve=gridForm&&gridForm.classList.contains('hidden')&&selected===null&&window.matchMedia?.('(hover:hover) and (pointer:fine)').matches?76:0;
+ const end=last.getBoundingClientRect().bottom+window.scrollY+10+reserve;let top=0;
  for(const [node,gap]of [[el('quizIdentity'),18],[el('quizGoal'),12],[el('resultTrack'),10],[document.querySelector('#quizPlay .formatHeader'),10]]){
   if(!visible(node))continue;
   top=Math.max(0,node.getBoundingClientRect().top+window.scrollY-header-gap);
@@ -1856,11 +1889,13 @@ function renderQuizGrid(){
 function quizGridGap(){const table=document.querySelector('#activityArea .fgTable');return table?table.getBoundingClientRect().top-document.querySelector('header').getBoundingClientRect().height-10:0}
 function revealQuizGridEditor(){
  const form=el('quizGridForm');if(!form||form.classList.contains('hidden'))return;
- if(!window.matchMedia?.('(hover:hover) and (pointer:fine)').matches){form.scrollIntoView({block:'center',behavior:'auto'});return}
+ if(!quizGridDesktop()){form.scrollIntoView({block:'center',behavior:'auto'});return}
+ fitQuizQuestion();
  const over=form.getBoundingClientRect().bottom+14-window.innerHeight;
  if(over>0)window.scrollBy({top:Math.min(over,Math.max(0,quizGridGap())),behavior:'auto'});
 }
-function showQuizGridCells(){requestAnimationFrame(()=>{const gap=quizGridGap();if(gap<0)window.scrollBy({top:gap,behavior:'auto'})})}
+function showQuizGridCells(){requestAnimationFrame(()=>{if(quizGridDesktop()){fitQuizQuestion();return}const gap=quizGridGap();if(gap<0)window.scrollBy({top:gap,behavior:'auto'})})}
+function quizGridDesktop(){return Boolean(window.matchMedia?.('(hover:hover) and (pointer:fine)').matches)}
 function selectQuizGridCell(cell){if(selected!==null)return;quizGridState.active=cell;quizGridState.draft=quizGridState.entries[cell];quizGridSuggestion=null;renderQuizGrid();el('quizGridInput').focus({preventScroll:true});requestAnimationFrame(revealQuizGridEditor)}
 function closeQuizGridEditor(){if(selected!==null)return;quizGridState.active=null;quizGridState.draft='';quizGridSuggestion=null;renderQuizGrid();showQuizGridCells()}
 function quizGridWarn(text){el('quizGridMessage').className='fgMessage fgError';el('quizGridMessage').textContent=text}
