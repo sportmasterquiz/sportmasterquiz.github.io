@@ -509,6 +509,12 @@ body.answerFeedbackOpen{overflow:hidden}
 .resultCard.resultCardWin{border-color:#e6c66f;background:linear-gradient(120deg,#3a3420,#17303a)}
 .resultCard.resultCardWin img{width:190px}
 #finalScore.scoreMissed{color:#ff8f9c}
+#finalScore{font-variant-numeric:tabular-nums}
+#finalScore.scoreLanded{animation:scoreLanded .45s ease-out}
+@keyframes scoreLanded{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){#finalScore.scoreLanded{animation:none}}
+#quizResult.isMissed .resultPrize{border-color:#a8616b;background:#33232d}
+#quizResult.isMissed .resultPrize .prizeMain{color:#ffb3bb}
 @media(max-width:420px){.resultCard{gap:12px;padding:12px}.resultCard img{width:112px}.resultCard.resultCardWin img{width:138px}}
 </style>
 <style id="quizFitStyles">
@@ -919,6 +925,11 @@ function scheduleQuizCue(context,output,kind,start=context.currentTime+.015){
  else if(kind==='wrong')quizTone(context,output,300,start,.14,'triangle',.12,220);
  else if(kind==='trophy'){
   [[523.25,0,.16],[659.25,.17,.16],[783.99,.34,.22],[1046.5,.57,.37]].forEach(([frequency,delay,length])=>quizTone(context,output,frequency,start+delay,length,'brass',.14));
+ }else if(kind==='miss'){
+  // Obiettivo mancato: tre note che scendono, l'ultima cala ancora.
+  quizTone(context,output,392,start,.2,'brass',.12);quizTone(context,output,329.63,start+.2,.2,'brass',.12);quizTone(context,output,261.63,start+.4,.46,'brass',.13,220);
+ }else if(kind==='tally'){
+  quizTone(context,output,659.25,start,.11,'sine',.13);quizTone(context,output,987.77,start+.1,.2,'sine',.14);
  }else if(kind==='career'){
   [[523.25,0,.21],[659.25,.13,.23],[783.99,.27,.25],[1046.5,.43,.29],[1318.51,.62,.36]].forEach(([frequency,delay,length])=>quizTone(context,output,frequency,start+delay,length,'sine',.15));
  }
@@ -1028,7 +1039,7 @@ function stopQuizVibration(){
 function pulseQuizVibration(kind){
  if(!quizFeedback.haptics||!quizFeedback.available||quizEffects.restoring||document.hidden)return;
  if(navigator.userActivation&&!navigator.userActivation.hasBeenActive)return;
- const duration=kind==='wrong'?35:kind==='trophy'||kind==='career'?90:kind==='preview'?12:0;
+ const duration=kind==='wrong'?35:kind==='miss'?70:kind==='trophy'||kind==='career'?90:kind==='preview'?12:0;
  if(!duration)return;
  stopQuizVibration();
  try{
@@ -1539,11 +1550,26 @@ async function shareResultCard(){
  const link=document.createElement('a'),url=URL.createObjectURL(blob);link.href=url;link.download='sportmasterquiz-risultato.jpg';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
  status.textContent='Scheda scaricata: allegala al messaggio che vuoi inviare.';
 }
+// Il punteggio finale sale da zero: il suono e la festa arrivano quando il conto si ferma.
+let finalScoreRun=0;
+function countUpFinalScore(points,max,done){
+ const node=el('finalScore'),run=++finalScoreRun,show=value=>{node.textContent=value+' / '+max+' punti'};
+ const finish=()=>{show(points);node.classList.add('scoreLanded');done()};
+ if(quizEffects.restoring||points<=0||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){finish();return}
+ const duration=Math.min(1500,Math.max(700,500+points*35)),start=performance.now();
+ const frame=now=>{
+  if(run!==finalScoreRun||el('quizResult').classList.contains('hidden'))return;
+  const progress=Math.min(1,Math.max(0,(now-start)/duration));
+  if(progress>=1){finish();return}
+  show(Math.floor(points*(1-Math.pow(1-progress,2))));requestAnimationFrame(frame);
+ };
+ requestAnimationFrame(frame);
+}
 function finishGame(){
  if(finishedGameSaved||!current.length||step<current.length||selected===null)return;clearSourceReturn();finishedGameSaved=true;
  el('quizPlay').classList.add('hidden');el('quizResult').classList.remove('hidden');el('quizLevelBadge').classList.add('hidden');
- const max=current.length*3,prize=el('resultPrize');let shareText=null,achievement=null,victoryTitle='',victoryDetail='',nextChallenge=null,cardHead='',cardSub='',cardKind='neutral',cardTitle='';prize.replaceChildren();
- el('finalScore').textContent=gamePoints+' / '+max+' punti';el('finalScore').classList.remove('scoreMissed');
+ const max=current.length*3,prize=el('resultPrize');let shareText=null,achievement=null,victoryTitle='',victoryDetail='',nextChallenge=null,cardHead='',cardSub='',cardKind='neutral',cardTitle='',missedTrophy='';prize.replaceChildren();
+ el('finalScore').textContent='0 / '+max+' punti';el('finalScore').classList.remove('scoreMissed','scoreLanded');
  el('resultText').textContent=score+'/'+current.length+' sfide risolte. '+(gamePoints===max?'Percorso perfetto!':gamePoints>=current.length*2?'Una bella gara: continua così!':'Ogni prova è un nuovo allenamento.');
  const line=(text,cls)=>{const p=document.createElement('p');if(cls)p.className=cls;p.textContent=text;prize.append(p)};
  if(isTrainingGame()){
@@ -1579,30 +1605,36 @@ function finishGame(){
     victoryDetail=(promoted?'Promosso a '+careerLevelNames[nextLevel]+'! ':'')+'La prossima sfida è «'+nextName+'».';
    }else victoryDetail=result.complete?'Hai conquistato tutti e tre i trofei di '+sport.name+'!':result.star?'Hai guadagnato una nuova stella per questo trofeo!':'Un’altra vittoria al livello Master. Continua ad arricchire la tua bacheca!';
   }else{
-   line('Trofeo «'+name+'» non conquistato.','prizeMain');
+   line('Riprova per conquistare «'+name+'»!','prizeMain');
    line('Servono almeno '+trophyPoints+' punti in una sola partita: in questa ne hai fatti '+gamePoints+'. I punti non si sommano da una partita all’altra: la prossima riparte da zero.');
+   missedTrophy=name;
    cardKind='miss';cardHead='Obiettivo: '+name;cardSub='Servono '+trophyPoints+' punti in una partita';
   }
  }
- el('finalScore').classList.toggle('scoreMissed',cardKind==='miss');el('resultCard').classList.toggle('resultCardWin',cardKind==='win');
- renderResultCard(isTrainingGame()?null:{icon:currentCat==='misto'?'🔥':trophySports[currentCat].icon,name:currentCat==='misto'?'All sports':trophySports[currentCat].name,sub:currentCat==='misto'?'Difficoltà crescente':'Livello '+careerLevelNames[playingLevel],points:gamePoints,max,dots:Array.from({length:10},(_,i)=>questionResults[i]?.kind||'none'),head:cardHead,detail:cardSub,kind:cardKind,title:cardTitle,star:achievement==='career',
+ el('resultCard').classList.toggle('resultCardWin',cardKind==='win');
+ renderResultCard(cardKind!=='win'?null:{icon:currentCat==='misto'?'🔥':trophySports[currentCat].icon,name:currentCat==='misto'?'All sports':trophySports[currentCat].name,sub:currentCat==='misto'?'Difficoltà crescente':'Livello '+careerLevelNames[playingLevel],points:gamePoints,max,dots:Array.from({length:10},(_,i)=>questionResults[i]?.kind||'none'),head:cardHead,detail:cardSub,kind:cardKind,title:cardTitle,star:achievement==='career',
   text:shareText||'Ho fatto '+gamePoints+'/'+max+' punti nel quiz '+(currentCat==='misto'?'All sports':trophySports[currentCat].name+', livello '+careerLevelNames[playingLevel])+' di SportMasterQuiz. Ti sfido: prova a fare meglio!'});
  if(progressPersistenceFailed)line('Il browser non riesce a salvare i progressi. I risultati restano disponibili solo finché questa pagina rimane aperta.');
  const resultView=el('quizResult'),heading=el('resultHeading'),celebration=el('resultCelebration'),milestone=el('resultMilestone'),actions=el('resultActions');
  resultView.classList.toggle('isVictory',Boolean(achievement));resultView.classList.toggle('isCareerVictory',achievement==='career');
  celebration.classList.toggle('hidden',!achievement);milestone.classList.toggle('hidden',!victoryDetail);milestone.textContent=victoryDetail;
  el('resultCelebrationIcon').textContent=achievement==='career'?'🌟':'🏆';el('resultCelebrationKicker').textContent=achievement==='career'?'Nuovo titolo All sports!':'Complimenti!';
- heading.textContent=victoryTitle||(isTrainingGame()?'Allenamento completato!':'Partita completata!');
+ heading.textContent=victoryTitle||(missedTrophy?'Obiettivo mancato':isTrainingGame()?'Allenamento completato!':'Partita completata!');
+ resultView.classList.toggle('isMissed',Boolean(missedTrophy));
  if(achievement)resultView.insertBefore(actions,el('finalScore'));else resultView.append(actions);
  const back=el('resultBackBtn');back.textContent=isTrainingGame()?'Altri allenamenti':'Altri quiz';back.onclick=()=>{if(isTrainingGame()){openCategory(currentCat);scrollQuizTo(el('trainingTitle'))}else goHome()};
  const replayButton=el('resultReplayBtn');replayButton.onclick=()=>replay();
- replayButton.textContent=isTrainingGame()?'Ripeti l’allenamento':currentCat==='misto'?'Continua in All sports →':achievement==='trophy'?'Rigioca «'+trophyName(currentCat,playingLevel)+'»':'Gioca ancora';
+ replayButton.textContent=isTrainingGame()?'Ripeti l’allenamento':currentCat==='misto'?'Continua in All sports →':achievement==='trophy'?'Rigioca «'+trophyName(currentCat,playingLevel)+'»':missedTrophy?'Riprova per «'+missedTrophy+'» →':'Gioca ancora';
  if(nextChallenge){
   replayButton.textContent='Gioca per «'+nextChallenge.name+'» →';
   replayButton.onclick=()=>{sportLevelChoice[nextChallenge.cat]=nextChallenge.level;startQuiz(nextChallenge.cat)};
  }
  heading.tabIndex=-1;heading.focus({preventScroll:true});scrollQuizTo(achievement?resultView:heading);
- if(achievement)celebrateQuizAchievement(achievement);
+ countUpFinalScore(gamePoints,max,()=>{
+  el('finalScore').classList.toggle('scoreMissed',Boolean(missedTrophy));
+  if(achievement)celebrateQuizAchievement(achievement);
+  else{playQuizSound(missedTrophy?'miss':'tally');if(missedTrophy)pulseQuizVibration('miss')}
+ });
 }
 
 function nextQuestion(){if(selected===null||finishedGameSaved||step>=current.length)return;resetAnswerFeedback();hideQuizSoundInvite();clearSourceReturn();step++;if(step>=current.length)finishGame();else renderQuestion()}
