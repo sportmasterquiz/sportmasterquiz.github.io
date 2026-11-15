@@ -869,13 +869,18 @@ function renderQuizAudioControl(announce=false){
  if(announce)el('quizAudioStatus').textContent=!quizEffects.available?'Audio non disponibile in questo browser.':enabled?'Suoni attivati.':'Suoni disattivati.';
  syncQuizFeedbackSettings();
 }
+const quizMasterVolume=2;
 function ensureQuizAudio(){
  if(!quizEffects.enabled||!quizEffects.available)return null;
  try{
   if(!quizEffects.context||quizEffects.context.state==='closed'){
    const Audio=window.AudioContext||window.webkitAudioContext;
    quizEffects.context=new Audio();quizEffects.master=quizEffects.context.createGain();
-   quizEffects.master.gain.value=.38;quizEffects.master.connect(quizEffects.context.destination);
+   // Volume alzato (prima .38): un limitatore evita distorsioni quando più note si sovrappongono.
+   quizEffects.master.gain.value=quizMasterVolume;
+   let output=quizEffects.context.destination;
+   try{const limiter=quizEffects.context.createDynamicsCompressor();limiter.threshold.value=-8;limiter.knee.value=6;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.12;limiter.connect(output);output=limiter}catch(e){}
+   quizEffects.master.connect(output);
   }
   return quizEffects.context;
  }catch(e){quizEffects.available=false;renderQuizAudioControl(true);return null}
@@ -921,8 +926,8 @@ function scheduleQuizCue(context,output,kind,start=context.currentTime+.015){
  else if(kind==='correct'){
   quizTone(context,output,880,start,.19,'sine',.17);
   quizTone(context,output,1318.51,start+.105,.2,'sine',.14);
- }else if(kind==='partial')quizTone(context,output,659.25,start,.21,'sine',.13,783.99);
- else if(kind==='wrong')quizTone(context,output,300,start,.14,'triangle',.12,220);
+ }else if(kind==='partial')quizTone(context,output,659.25,start,.21,'sine',.17,783.99);
+ else if(kind==='wrong')quizTone(context,output,300,start,.16,'triangle',.19,220);
  else if(kind==='trophy'){
   [[523.25,0,.16],[659.25,.17,.16],[783.99,.34,.22],[1046.5,.57,.37]].forEach(([frequency,delay,length])=>quizTone(context,output,frequency,start+delay,length,'brass',.14));
  }else if(kind==='miss'){
@@ -1846,8 +1851,18 @@ function renderQuizGrid(){
  }
  el('activityArea').replaceChildren(root);el('quizGridInput').value=s.draft;el('quizGridInput').oninput=()=>{s.draft=el('quizGridInput').value;quizGridSuggestion=null;el('quizGridSuggestion').replaceChildren();el('quizGridSuggestion').classList.add('hidden');el('quizGridMessage').textContent=''};
 }
-function selectQuizGridCell(cell){if(selected!==null)return;quizGridState.active=cell;quizGridState.draft=quizGridState.entries[cell];quizGridSuggestion=null;renderQuizGrid();el('quizGridInput').focus();requestAnimationFrame(()=>el('quizGridForm')?.scrollIntoView({block:'center',behavior:'auto'}))}
-function closeQuizGridEditor(){if(selected!==null)return;quizGridState.active=null;quizGridState.draft='';quizGridSuggestion=null;renderQuizGrid()}
+// La griglia resta in vista: aprendo il campo la pagina scorre solo quanto serve a mostrarlo,
+// e dopo aver salvato o chiuso torna sulle caselle, senza dover risalire a mano.
+function quizGridGap(){const table=document.querySelector('#activityArea .fgTable');return table?table.getBoundingClientRect().top-document.querySelector('header').getBoundingClientRect().height-10:0}
+function revealQuizGridEditor(){
+ const form=el('quizGridForm');if(!form||form.classList.contains('hidden'))return;
+ if(!window.matchMedia?.('(hover:hover) and (pointer:fine)').matches){form.scrollIntoView({block:'center',behavior:'auto'});return}
+ const over=form.getBoundingClientRect().bottom+14-window.innerHeight;
+ if(over>0)window.scrollBy({top:Math.min(over,Math.max(0,quizGridGap())),behavior:'auto'});
+}
+function showQuizGridCells(){requestAnimationFrame(()=>{const gap=quizGridGap();if(gap<0)window.scrollBy({top:gap,behavior:'auto'})})}
+function selectQuizGridCell(cell){if(selected!==null)return;quizGridState.active=cell;quizGridState.draft=quizGridState.entries[cell];quizGridSuggestion=null;renderQuizGrid();el('quizGridInput').focus({preventScroll:true});requestAnimationFrame(revealQuizGridEditor)}
+function closeQuizGridEditor(){if(selected!==null)return;quizGridState.active=null;quizGridState.draft='';quizGridSuggestion=null;renderQuizGrid();showQuizGridCells()}
 function quizGridWarn(text){el('quizGridMessage').className='fgMessage fgError';el('quizGridMessage').textContent=text}
 function saveQuizGridEntry(confirmed=null){
  if(selected!==null||quizGridState.active===null)return false;
@@ -1862,7 +1877,7 @@ function saveQuizGridEntry(confirmed=null){
 function commitQuizGridEntry(cell,value,known){
  const s=quizGridState,name=footballGridNormalize(value);
  if(name&&s.entries.some((entry,index)=>{if(index===cell||!entry)return false;const other=quizGridResolve(entry,index);return known&&other?known.id===other.id:footballGridNormalize(entry)===name})){quizGridWarn('Hai già usato questo giocatore. Scegli un nome diverso.');return false}
- s.entries[cell]=value;s.active=null;s.draft='';quizGridSuggestion=null;renderQuizGrid();const next=s.entries.findIndex(x=>!x);if(next>=0)el('quizGridCell'+next).focus({preventScroll:true});return true;
+ s.entries[cell]=value;s.active=null;s.draft='';quizGridSuggestion=null;renderQuizGrid();const next=s.entries.findIndex(x=>!x);if(next>=0)el('quizGridCell'+next).focus({preventScroll:true});showQuizGridCells();return true;
 }
 function confirmQuizGridSuggestion(use){const s=quizGridSuggestion;if(!s||s.cell!==quizGridState.active||s.typed!==footballGridNormalize(el('quizGridInput').value))return;if(use)saveQuizGridEntry(s.id);else commitQuizGridEntry(s.cell,el('quizGridInput').value.trim().slice(0,80),null)}
 function submitQuizGrid(restoring=false){
