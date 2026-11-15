@@ -506,7 +506,10 @@ body.answerFeedbackOpen{overflow:hidden}
 .resultCard .primary{width:100%;min-height:48px}
 .resultCardStatus{margin:8px 0 0;font-size:.88rem;line-height:1.45;color:var(--muted)}
 .resultCardStatus:empty{display:none}
-@media(max-width:420px){.resultCard{gap:12px;padding:12px}.resultCard img{width:112px}}
+.resultCard.resultCardWin{border-color:#e6c66f;background:linear-gradient(120deg,#3a3420,#17303a)}
+.resultCard.resultCardWin img{width:190px}
+#finalScore.scoreMissed{color:#ff8f9c}
+@media(max-width:420px){.resultCard{gap:12px;padding:12px}.resultCard img{width:112px}.resultCard.resultCardWin img{width:138px}}
 </style>
 <style id="quizFitStyles">
 /* Sul telefono la domanda e le risposte stanno nella prima schermata: stessi elementi, spazi più stretti. */
@@ -1478,24 +1481,41 @@ function drawResultCard(info){
  const font=(size,weight=800)=>weight+' '+size+'px system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
  const text=(value,y,size,color,weight=800,maxWidth=940)=>{let s=size;c.font=font(s,weight);while(c.measureText(value).width>maxWidth&&s>22){s-=2;c.font=font(s,weight)}c.fillStyle=color;c.fillText(value,540,y)};
  const box=(x,y,w,h,r)=>{c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()};
- const back=c.createLinearGradient(0,0,1080,1350);back.addColorStop(0,'#0a1b2b');back.addColorStop(.55,'#12324a');back.addColorStop(1,'#0c2233');c.fillStyle=back;c.fillRect(0,0,1080,1350);
- c.strokeStyle='#b8f549';c.lineWidth=6;box(27,27,1026,1296,44);c.stroke();
+ const win=info.kind==='win',miss=info.kind==='miss',accent=win?'#ffd475':'#b8f549';
+ const back=c.createLinearGradient(0,0,1080,1350);back.addColorStop(0,win?'#1d2a22':'#0a1b2b');back.addColorStop(.55,win?'#1b3d3a':'#12324a');back.addColorStop(1,'#0c2233');c.fillStyle=back;c.fillRect(0,0,1080,1350);
+ if(win){
+  // Un successo si riconosce subito: alone dorato, coriandoli e il trofeo al posto dello sport.
+  const glow=c.createRadialGradient(540,270,20,540,270,430);glow.addColorStop(0,'#ffd47566');glow.addColorStop(1,'#ffd47500');c.fillStyle=glow;c.fillRect(0,0,1080,720);
+  const confetti=['#ffd475','#b8f549','#69d8fb','#ff9aaf','#f6edca'];
+  let seed=7;const spread=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<40;i++){const x=(i%2?70:820)+spread()*190,y=80+spread()*520,size=10+spread()*13;c.save();c.translate(x,y);c.rotate(i*1.7);c.globalAlpha=.85;c.fillStyle=confetti[i%confetti.length];c.fillRect(-size/2,-size,size,size*1.7);c.restore()}
+ }
+ c.strokeStyle=accent;c.lineWidth=win?10:6;box(27,27,1026,1296,44);c.stroke();
  c.textAlign='center';c.textBaseline='alphabetic';
- text('SPORTMASTERQUIZ',132,50,'#b8f549',900);
- text(info.icon,300,118,'#ffffff',400);
- text(info.name,410,84,'#ffffff',900);
- text(info.sub,474,42,'#69d8fb',700);
- const big=String(info.points),tail='/'+info.max;c.font=font(250,900);const bigWidth=c.measureText(big).width;c.font=font(96,800);const tailWidth=c.measureText(tail).width,start=540-(bigWidth+tailWidth)/2;
- c.textAlign='left';c.font=font(250,900);c.fillStyle='#b8f549';c.fillText(big,start,720);c.font=font(96,800);c.fillStyle='#a5b6c6';c.fillText(tail,start+bigWidth+6,720);c.textAlign='center';
- text('punti',778,40,'#a5b6c6',700);
+ text('SPORTMASTERQUIZ',132,50,accent,900);
+ if(win){
+  text(info.star?'🌟':'🏆',330,170,'#ffffff',400);
+  text(info.title,452,96,'#ffd475',900);
+  text(info.name+' · '+info.sub,514,40,'#e9f5ff',700);
+ }else{
+  text(info.icon,300,118,'#ffffff',400);
+  text(info.name,410,84,'#ffffff',900);
+  text(info.sub,474,42,'#69d8fb',700);
+ }
+ const scoreColor=miss?'#ff8f9c':'#b8f549',scoreSize=win?210:250,scoreY=win?724:720;
+ const big=String(info.points),tail='/'+info.max;c.font=font(scoreSize,900);const bigWidth=c.measureText(big).width;c.font=font(96,800);const tailWidth=c.measureText(tail).width,start=540-(bigWidth+tailWidth)/2;
+ c.textAlign='left';c.font=font(scoreSize,900);c.fillStyle=scoreColor;c.fillText(big,start,scoreY);c.font=font(96,800);c.fillStyle='#a5b6c6';c.fillText(tail,start+bigWidth+6,scoreY);c.textAlign='center';
+ text('punti',778,40,miss?'#ffb3bb':'#a5b6c6',700);
  const colors={correct:'#7be39d',partial:'#ffd475',wrong:'#f08a98'};
  info.dots.forEach((kind,i)=>{const x=108+i*96,y=868;c.beginPath();c.arc(x,y,38,0,Math.PI*2);c.fillStyle=colors[kind]||'#2c4459';c.fill();
   c.strokeStyle='#0a1b2b';c.lineWidth=9;c.lineCap='round';c.beginPath();
   if(kind==='correct'){c.moveTo(x-17,y+1);c.lineTo(x-5,y+14);c.lineTo(x+18,y-13)}else if(kind==='wrong'){c.moveTo(x-14,y-14);c.lineTo(x+14,y+14);c.moveTo(x+14,y-14);c.lineTo(x-14,y+14)}else if(kind==='partial'){c.moveTo(x-15,y);c.lineTo(x+15,y)}
   c.stroke()});
- c.fillStyle='#1b3a3a';box(80,948,920,196,28);c.fill();c.strokeStyle='#e6c66f';c.lineWidth=4;c.stroke();
- text(info.head,1036,56,'#ffd475',900,860);text(info.detail,1100,38,'#e9f5ff',600,860);
- text('Riesci a fare meglio?',1222,50,'#ffffff',900);
+ if(win){const gold=c.createLinearGradient(80,948,1000,1144);gold.addColorStop(0,'#ffe08a');gold.addColorStop(1,'#e8b545');c.fillStyle=gold;box(80,948,920,196,28);c.fill();
+  text(info.head,1040,62,'#1b2412',900,860);text(info.detail,1104,40,'#2a3319',800,860);
+ }else{c.fillStyle='#16303f';box(80,948,920,196,28);c.fill();c.strokeStyle=miss?'#5b7186':'#e6c66f';c.lineWidth=4;c.stroke();
+  text(info.head,1036,56,miss?'#ffffff':'#ffd475',900,860);text(info.detail,1100,38,'#e9f5ff',600,860);}
+ text('Ti sfido: prova a fare meglio!',1222,50,'#ffffff',900);
  text(publicSiteUrl.replace(/^https?:\/\//,'').replace(/\/$/,''),1284,40,'#69d8fb',700);
  return canvas;
 }
@@ -1503,7 +1523,7 @@ function renderResultCard(info){
  const card=el('resultCard'),image=el('resultCardImage');resultCardCanvas=null;resultCardText='';el('resultCardStatus').textContent='';card.classList.add('hidden');
  if(!info)return;
  try{resultCardCanvas=drawResultCard(info);if(!resultCardCanvas)return;image.src=resultCardCanvas.toDataURL('image/jpeg',.9)}catch(e){resultCardCanvas=null;return}
- resultCardText=info.text;image.alt='Scheda del risultato: '+info.name+', '+info.sub+', '+info.points+' punti su '+info.max+'. '+info.head+'.';
+ resultCardText=info.text;image.alt='Scheda del risultato: '+info.name+', '+info.sub+', '+info.points+' punti su '+info.max+'. '+(info.kind==='win'?info.head+' '+info.title:info.head)+'.';
  el('resultCardShare').onclick=shareResultCard;card.classList.remove('hidden');
 }
 async function shareResultCard(){
@@ -1522,8 +1542,8 @@ async function shareResultCard(){
 function finishGame(){
  if(finishedGameSaved||!current.length||step<current.length||selected===null)return;clearSourceReturn();finishedGameSaved=true;
  el('quizPlay').classList.add('hidden');el('quizResult').classList.remove('hidden');el('quizLevelBadge').classList.add('hidden');
- const max=current.length*3,prize=el('resultPrize');let shareText=null,achievement=null,victoryTitle='',victoryDetail='',nextChallenge=null,cardHead='',cardSub='';prize.replaceChildren();
- el('finalScore').textContent=gamePoints+' / '+max+' punti';
+ const max=current.length*3,prize=el('resultPrize');let shareText=null,achievement=null,victoryTitle='',victoryDetail='',nextChallenge=null,cardHead='',cardSub='',cardKind='neutral',cardTitle='';prize.replaceChildren();
+ el('finalScore').textContent=gamePoints+' / '+max+' punti';el('finalScore').classList.remove('scoreMissed');
  el('resultText').textContent=score+'/'+current.length+' sfide risolte. '+(gamePoints===max?'Percorso perfetto!':gamePoints>=current.length*2?'Una bella gara: continua così!':'Ogni prova è un nuovo allenamento.');
  const line=(text,cls)=>{const p=document.createElement('p');if(cls)p.className=cls;p.textContent=text;prize.append(p)};
  if(isTrainingGame()){
@@ -1536,8 +1556,9 @@ function finishGame(){
   if(result.promoted)line('🎆 Nuovo titolo: '+careerTitle(result.total)+'!','prizePromo');
   line((result.promoted?'':'Carriera All sports: '+careerTitle(result.total)+', '+fmtNum(result.total)+' punti. ')+(next?'Mancano '+fmtNum(next[0]-result.total)+' punti per diventare '+next[1]+'.':'Sei al titolo più alto.'));
   if(result.promoted){achievement='career';victoryTitle='Sei '+careerTitle(result.total)+'!';victoryDetail=next?'Prossimo traguardo: '+next[1]+' a '+fmtNum(next[0])+' punti.':'Hai raggiunto il titolo più alto: Leggenda!';}
-  cardHead=result.promoted?'Nuovo titolo: '+careerTitle(result.total)+'!':'+'+fmtNum(result.earned)+' punti carriera';cardSub='Carriera: '+careerTitle(result.total)+' · '+fmtNum(result.total)+' punti';
-  if(result.promoted)shareText='Sono diventato '+careerTitle(result.total)+' nella carriera All sports di SportMasterQuiz! Riesci a fare meglio?';
+  if(result.promoted){cardKind='win';cardTitle=careerTitle(result.total)}
+  cardHead=result.promoted?'NUOVO TITOLO ALL SPORTS!':'+'+fmtNum(result.earned)+' punti carriera';cardSub='Carriera: '+careerTitle(result.total)+' · '+fmtNum(result.total)+' punti';
+  if(result.promoted)shareText='Sono diventato '+careerTitle(result.total)+' nella carriera All sports di SportMasterQuiz! Ti sfido: prova a fare meglio!';
  }else{
   const name=trophyName(currentCat,playingLevel),sport=trophySports[currentCat];
   if(current.length!==trophyQuestions){
@@ -1547,11 +1568,11 @@ function finishGame(){
    const unlockedBefore=unlockedIndex(currentCat),result=awardTrophy(currentCat,playingLevel);
    achievement='trophy';victoryTitle='Hai vinto «'+name+'»!';
    line('Nella tua bacheca: «'+name+'» ×'+result.count+'.'+(result.star?' Hai guadagnato una nuova stella ★!':'')+(result.complete?' Hai conquistato tutti e tre i trofei di '+sport.name+'!':''));
-   shareText='Ho vinto il trofeo «'+name+'» ('+sport.name+', livello '+careerLevelNames[playingLevel]+') su SportMasterQuiz con '+gamePoints+'/'+max+' punti! Riesci a fare meglio?';
+   shareText='Ho vinto il trofeo «'+name+'» ('+sport.name+', livello '+careerLevelNames[playingLevel]+') su SportMasterQuiz con '+gamePoints+'/'+max+' punti! Ti sfido: prova a fare meglio!';
    const promoted=promoteIfNeeded(currentCat,playingLevel,unlockedBefore);
-   if(promoted)shareText='Ho vinto il trofeo «'+name+'» su SportMasterQuiz e sono passato al livello '+careerLevelNames[promoted]+' di '+sport.name+'! Riesci a fare meglio?';
+   if(promoted)shareText='Ho vinto il trofeo «'+name+'» su SportMasterQuiz e sono passato al livello '+careerLevelNames[promoted]+' di '+sport.name+'! Ti sfido: prova a fare meglio!';
    const board=loadProgress().trophies,wonTotal=Object.keys(trophySports).reduce((sum,cat)=>sum+trophyLevels.filter(level=>board[cat]?.[level]>0).length,0);
-   cardHead='🏆 '+name+' conquistato!';cardSub=promoted?'Promosso a '+careerLevelNames[promoted]:'In bacheca: '+wonTotal+' trofei su '+Object.keys(trophySports).length*3;
+   cardKind='win';cardTitle=name;cardHead='TROFEO CONQUISTATO!';cardSub=promoted?'Promosso a '+careerLevelNames[promoted]:'In bacheca: '+wonTotal+' trofei su '+Object.keys(trophySports).length*3;
    const index=trophyLevels.indexOf(playingLevel);
    if(index<2){
     const nextLevel=trophyLevels[index+1],nextName=trophyName(currentCat,nextLevel);nextChallenge={cat:currentCat,level:nextLevel,name:nextName};
@@ -1560,11 +1581,12 @@ function finishGame(){
   }else{
    line('Trofeo «'+name+'» non conquistato.','prizeMain');
    line('Servono almeno '+trophyPoints+' punti in una sola partita: in questa ne hai fatti '+gamePoints+'. I punti non si sommano da una partita all’altra: la prossima riparte da zero.');
-   cardHead='Obiettivo: '+name;cardSub='Servono '+trophyPoints+' punti in una partita';
+   cardKind='miss';cardHead='Obiettivo: '+name;cardSub='Servono '+trophyPoints+' punti in una partita';
   }
  }
- renderResultCard(isTrainingGame()?null:{icon:currentCat==='misto'?'🔥':trophySports[currentCat].icon,name:currentCat==='misto'?'All sports':trophySports[currentCat].name,sub:currentCat==='misto'?'Difficoltà crescente':'Livello '+careerLevelNames[playingLevel],points:gamePoints,max,dots:Array.from({length:10},(_,i)=>questionResults[i]?.kind||'none'),head:cardHead,detail:cardSub,
-  text:shareText||'Ho fatto '+gamePoints+'/'+max+' punti nel quiz '+(currentCat==='misto'?'All sports':trophySports[currentCat].name+', livello '+careerLevelNames[playingLevel])+' di SportMasterQuiz. Riesci a fare meglio?'});
+ el('finalScore').classList.toggle('scoreMissed',cardKind==='miss');el('resultCard').classList.toggle('resultCardWin',cardKind==='win');
+ renderResultCard(isTrainingGame()?null:{icon:currentCat==='misto'?'🔥':trophySports[currentCat].icon,name:currentCat==='misto'?'All sports':trophySports[currentCat].name,sub:currentCat==='misto'?'Difficoltà crescente':'Livello '+careerLevelNames[playingLevel],points:gamePoints,max,dots:Array.from({length:10},(_,i)=>questionResults[i]?.kind||'none'),head:cardHead,detail:cardSub,kind:cardKind,title:cardTitle,star:achievement==='career',
+  text:shareText||'Ho fatto '+gamePoints+'/'+max+' punti nel quiz '+(currentCat==='misto'?'All sports':trophySports[currentCat].name+', livello '+careerLevelNames[playingLevel])+' di SportMasterQuiz. Ti sfido: prova a fare meglio!'});
  if(progressPersistenceFailed)line('Il browser non riesce a salvare i progressi. I risultati restano disponibili solo finché questa pagina rimane aperta.');
  const resultView=el('quizResult'),heading=el('resultHeading'),celebration=el('resultCelebration'),milestone=el('resultMilestone'),actions=el('resultActions');
  resultView.classList.toggle('isVictory',Boolean(achievement));resultView.classList.toggle('isCareerVictory',achievement==='career');
