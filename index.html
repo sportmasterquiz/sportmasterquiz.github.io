@@ -38,14 +38,14 @@ header{position:sticky;background:rgba(5,17,30,.94);border-bottom:1px solid #2e4
 @media(max-width:510px){.playerSticker{max-width:220px}.playerSticker img{height:220px}}
 
 .shareMini:hover,.shareMini:focus-visible{background:#214b61;border-color:var(--sky)}.footerActions{display:flex;align-items:center;gap:20px;flex-wrap:wrap}.footerActions .shareMini{margin-top:0}
-.kofiBtn{text-decoration:none;background:#3b2c17;border-color:#6b5536;color:#ffe3b0;margin-left:8px;margin-top:12px}
-.resultKofi{text-align:center;margin:20px 0 2px;font-size:.92rem;color:var(--muted)}
-.resultKofi a{color:#ffd79a;text-decoration:none;border-bottom:1px solid #6b5536;padding-bottom:1px}
-.resultKofi a:hover{color:#ffe3b0;border-bottom-color:#ffe3b0}
-.headerKofi{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:#3b2c17;border:1px solid #6b5536;border-radius:12px;text-decoration:none;font-size:1.25rem;flex-shrink:0}
-.headerKofi:hover{background:#4a3820}
+.kofiBtn{text-decoration:none;background:linear-gradient(135deg,#ff6b5e,#e8403a);border-color:#ff8a7d;color:#fff;font-weight:800;margin-left:8px;margin-top:12px;box-shadow:0 4px 14px rgba(232,64,58,.35)}
+.resultKofi{text-align:center;margin:22px 0 2px;font-size:.95rem;color:var(--muted)}
+.resultKofi a{display:inline-flex;align-items:center;gap:7px;margin:8px 0 0 8px;background:linear-gradient(135deg,#ff6b5e,#e8403a);color:#fff;font-weight:800;text-decoration:none;border-radius:999px;padding:11px 18px;box-shadow:0 4px 14px rgba(232,64,58,.35)}
+.resultKofi a:hover{background:linear-gradient(135deg,#ff7d70,#f2524c)}
+.headerKofi{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:linear-gradient(135deg,#ff6b5e,#e8403a);border:1px solid #ff8a7d;border-radius:12px;text-decoration:none;font-size:1.25rem;flex-shrink:0;box-shadow:0 4px 14px rgba(232,64,58,.35)}
+.headerKofi:hover{background:linear-gradient(135deg,#ff7d70,#f2524c)}
 @media(min-width:1060px){body:has(#viewHome:not(.hidden)) .nav{grid-template-columns:auto minmax(0,1fr) auto auto auto}body:has(#viewHome:not(.hidden)) .headerKofi{display:inline-flex;grid-column:4;grid-row:1}body:has(#viewHome:not(.hidden)) .soundToggle{grid-column:3;grid-row:1}body:has(#viewHome:not(.hidden)) .shareTop{grid-column:5;grid-row:1}}
-.kofiBtn:hover{background:#4a3820}
+.kofiBtn:hover{background:linear-gradient(135deg,#ff7d70,#f2524c)}
 .shareDialog{width:min(480px,calc(100% - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:26px;border:1px solid var(--line);border-radius:20px;background:var(--panel);color:var(--text);box-shadow:0 24px 80px #0007}.shareDialog::backdrop{background:#020914bd;backdrop-filter:blur(4px)}.shareClose{display:flex;justify-content:flex-end;margin:0}.shareClose button{padding:7px 11px}.shareDialog h2{margin:4px 0 12px;font-size:1.45rem}.shareDialog p{color:var(--muted);line-height:1.5}.shareUrlLabel{display:block;margin:20px 0 8px;font-size:.85rem;font-weight:750}.shareDialog input{display:block;width:100%;min-width:0;padding:13px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;font-size:.88rem}.shareDialog input:focus-visible{outline:3px solid var(--sky);outline-offset:2px}.shareOptions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.shareOptions a{text-align:center;text-decoration:none}.shareOptions a:hover{background:var(--panel2);border-color:var(--sky)}.shareCopy{grid-column:1/-1}.shareDialog .shareStatus{min-height:1.5em;font-size:.85rem;color:var(--lime);margin-bottom:0}
 @media(max-width:400px){.shareDialog{padding:20px}}
 
