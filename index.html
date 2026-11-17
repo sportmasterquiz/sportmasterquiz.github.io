@@ -2086,7 +2086,8 @@ function restoreQuizGrid(snapshot,q){
 function openLinkedQuiz(){
  const params=new URLSearchParams(location.search),sport=params.get('sport');
  if(!categories.some(c=>c.id===sport))return;
- if(sport==='misto'||sport==='olimpiadi'||params.get('gioca')==='1')startQuiz(sport);else openCategory(sport);
+ const tema=params.get('tema'),topicOk=categories.find(c=>c.id===sport).topics?.some(x=>x[0]===tema);
+ if(sport==='misto'||sport==='olimpiadi'||params.get('gioca')==='1')startQuiz(sport,topicOk?tema:null);else openCategory(sport);
  for(const key of ['sport','tema','gioca'])params.delete(key);
  const search=params.toString();history.replaceState(null,'',location.pathname+(search?'?'+search:'')+location.hash);
 }
