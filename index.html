@@ -1423,14 +1423,19 @@ function dailyQuestions(key){
  for(const [level,sport]of plan){const k=level+'|'+sport,pool=dailyPool(level,sport);if(!pool.length)continue;const n=(counts[k]||0)+(seen[k]||0);seen[k]=(seen[k]||0)+1;picked.push(pool[n%pool.length])}
  return picked;
 }
+function dailyNumber(key){return dailyIndex(key)+1}
+function dailyPrevKey(key){return new Date(Date.parse(key+'T12:00:00Z')-864e5).toISOString().slice(0,10)}
+function dailyStreak(key){let n=0,k=key;while(n<400&&dailySaved(k)){n++;k=dailyPrevKey(k)}return n}
+function dailyStreakText(n){return n>=2?'🔥 '+n+' giorni di fila':''}
 function dailySaved(key){try{return JSON.parse(localStorage.getItem('smq_daily_'+key)||'null')}catch(e){return null}}
 function dailySquares(kinds){return kinds.map(k=>k==='correct'?'🟩':k==='partial'?'🟨':'🟥').join('')}
-function dailyShareText(r){return 'SportMasterQuiz · Sfida del giorno '+dailyLabel(r.key)+'\n'+dailySquares(r.kinds)+' '+r.score+'/'+r.total+'\nRiesci a fare meglio?'}
+function dailyShareText(r){const s=dailyStreakText(dailyStreak(r.key));return 'SportMasterQuiz · Sfida #'+dailyNumber(r.key)+' ('+dailyLabel(r.key)+')\n'+dailySquares(r.kinds)+' '+r.score+'/'+r.total+(s?'\n'+s:'')+'\nRiesci a fare meglio?'}
 function shareDaily(){const r=dailySaved(dailyKey());if(!r){startQuiz('daily');return}smqTrack('condividi/sfida-del-giorno','Condivisione sfida del giorno');shareSite(dailyShareText(r))}
 function renderDailyInvite(){
  const r=dailySaved(dailyKey()),title=el('dailyInviteTitle'),text=el('dailyInviteText');if(!title)return;
- if(r){title.textContent='Sfida del giorno: '+r.score+'/'+r.total;text.innerHTML='';const sq=document.createElement('span');sq.className='dailySquares';sq.textContent=dailySquares(r.kinds);text.append(sq,document.createTextNode(' Fatta! Tocca per condividere il risultato. Domani ne arriva una nuova.'))}
- else{title.textContent='Sfida del giorno · '+dailyLabel(dailyKey());text.textContent='5 domande, uguali per tutti, una nuova ogni giorno. Gioca e sfida i tuoi amici.'}
+ const key=dailyKey(),num='Sfida del giorno #'+dailyNumber(key);
+ if(r){const s=dailyStreakText(dailyStreak(key));title.textContent=num+': '+r.score+'/'+r.total;text.innerHTML='';const sq=document.createElement('span');sq.className='dailySquares';sq.textContent=dailySquares(r.kinds);text.append(sq,document.createTextNode((s?' '+s+'.':'')+' Fatta! Tocca per condividere il risultato. Domani ne arriva una nuova.'))}
+ else{const prev=dailyStreak(dailyPrevKey(key));title.textContent=num+' · '+dailyLabel(key);text.textContent=prev>=1?'🔥 Sei a '+prev+(prev===1?' giorno':' giorni')+' di fila: gioca anche oggi per non interrompere la serie.':'5 domande, uguali per tutti, una nuova ogni giorno. Gioca e sfida i tuoi amici.'}
 }
 function openDaily(event){if(event)event.preventDefault();if(dailySaved(dailyKey()))shareDaily();else startQuiz('daily')}
 function finishDaily(){
@@ -1443,12 +1448,13 @@ function finishDaily(){
  el('resultText').textContent=score+'/'+current.length+' risposte giuste nella sfida di oggi.';
  const line=(text,cls)=>{const p=document.createElement('p');if(cls)p.className=cls;p.textContent=text;prize.append(p);return p};
  line(dailySquares(kinds),'prizeMain dailySquares');
+ const streak=dailyStreak(key);line(streak>=2?'🔥 '+streak+' giorni di fila! Torna domani per allungare la serie.':'Prima sfida della tua serie: torna domani per iniziare a contare i giorni di fila.');
  line('Condividi il risultato e sfida i tuoi amici: la sfida è uguale per tutti fino a mezzanotte. Domani ne arriva una nuova.');
  const btn=document.createElement('button');btn.className='primary';btn.type='button';btn.textContent='Condividi il risultato';btn.onclick=shareDaily;prize.append(btn);
  renderResultCard(null);el('resultCard').classList.remove('resultCardWin');
  const resultView=el('quizResult'),actions=el('resultActions');
  resultView.classList.remove('isVictory','isCareerVictory','isMissed');el('resultCelebration').classList.add('hidden');el('resultMilestone').classList.add('hidden');
- el('resultHeading').textContent='Sfida del giorno completata!';resultView.append(actions);
+ el('resultHeading').textContent='Sfida #'+dailyNumber(key)+' completata!';resultView.append(actions);
  el('resultReplayBtn').textContent='Gioca una partita All Sports';el('resultBackBtn').textContent='Torna alla home';
  renderResultTrack();renderDailyInvite();
 }
@@ -1474,7 +1480,7 @@ function startQuiz(cat,topic=null){
  finishedGameSaved=false;step=0;score=0;gamePoints=0;selected=null;
  if(!current.length){goHome();return;}
  toggle('viewQuiz');el('quizBack').textContent=quizBackLabel();el('quizPlay').classList.remove('hidden');el('quizResult').classList.add('hidden');
- const c=categories.find(c=>c.id===cat);el('quizCategory').textContent=dailyMode?'Sfida del giorno · '+dailyLabel(dailyMode)+' · 5 domande, difficoltà crescente':sessionSubtitle(c,topic,playingLevel,current.length);
+ const c=categories.find(c=>c.id===cat);el('quizCategory').textContent=dailyMode?'Sfida del giorno #'+dailyNumber(dailyMode)+' · '+dailyLabel(dailyMode)+' · 5 domande, difficoltà crescente':sessionSubtitle(c,topic,playingLevel,current.length);
  renderQuestion();
 }
 function isCircuitPractice(){return currentCat==='formula1'&&currentTopic==='sagome'}
