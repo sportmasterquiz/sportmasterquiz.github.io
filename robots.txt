@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://sportmasterquiz.github.io/sitemap.xml
+Sitemap: https://sportmasterquiz.it/sitemap.xml
