@@ -1403,7 +1403,7 @@ const smqLevelName={medio:'dilettante',difficile:'professionista',esperto:'maste
 function smqTrack(path,title){try{if(window.goatcounter&&window.goatcounter.count)window.goatcounter.count({path:path,title:title||path,event:true})}catch(e){}}
 
 let dailyMode=null;
-const dailyStart=Date.UTC(2026,10,18),dailySports=['calcio','tennis','basket','ciclismo','formula1','olimpiadi'],dailySlots=['medio','medio','difficile','difficile','esperto'];
+const dailyStart=Date.UTC(2026,10,17),dailySports=['calcio','tennis','basket','ciclismo','formula1','olimpiadi'],dailySlots=['medio','medio','difficile','difficile','esperto'];
 function dailyKey(){try{return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome'}).format(new Date())}catch(e){return new Date().toISOString().slice(0,10)}}
 function dailyLabel(key){const [y,m,d]=key.split('-');return d+'/'+m}
 function dailyIndex(key){return Math.max(0,Math.round((Date.parse(key+'T00:00:00Z')-dailyStart)/864e5))}
