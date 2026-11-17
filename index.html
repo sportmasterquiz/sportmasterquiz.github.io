@@ -1221,7 +1221,9 @@ function pick(pool,n,level,key,settings={}){
  const share=(count,most)=>{if(settings.balanced)return count?most:0;const rate=pool.length?Math.min(most,2*count*n/pool.length):0;return Math.floor(rate)+Number(Math.random()<rate%1)};
  let specialCap=settings.circuitsOnly?n:share(specialTotal,specialHardCap);
  const specialSlots=Math.min(n>=6?2:1,specialCap);let specials=0;
- const photoTurn=share(pool.filter(q=>q.photo).length,1)>0;
+ // Le foto non hanno più un posto riservato nelle partite dei singoli sport: entrano come le altre
+ // domande, così anche senza memoria del browser escono quanto le altre. All Sports resta com'era.
+ const photoTurn=settings.balanced&&share(pool.filter(q=>q.photo).length,1)>0;
  const previousFacts=new Set(historyFor('last_'+key).flatMap(id=>factKeys(byId.get(id)||{id})));
  const specialAvailable=q=>(q.format!=='griglia'||gridCount<1)&&(settings.circuitsOnly||q.format!=='circuito'||circuitCount<1)&&(!isSpecial(q)||(specials<specialCap&&(settings.circuitsOnly||!(q.format==='griglia'?[q.id]:factKeys(q)).some(id=>previousFacts.has(id)))));
  {
