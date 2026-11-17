@@ -46,3 +46,57 @@ Foto documentarie da Wikimedia Commons. Copie ospitate nel sito, ridimensionate 
 - Origine: https://commons.wikimedia.org/wiki/File:Paris-Roubaix_2021_KM39_van_der_Poel_Colbrelli_Boivin.jpg
 - Licenza: CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
 - Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
+
+## Berlino, la lotteria
+
+- File: calcio-2006.webp
+- Soggetto e contesto: Italia–Francia · Finale mondiale, 9 luglio 2006
+- Autore / crediti: David Ruddell
+- Origine: https://commons.wikimedia.org/wiki/File:Italy_vs_France_2006.jpg
+- Licenza: CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/
+- Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
+
+## Due match point
+
+- File: tennis-2019.webp
+- Soggetto e contesto: Federer–Djokovic · Finale di Wimbledon, 14 luglio 2019
+- Autore / crediti: LHC88
+- Origine: https://commons.wikimedia.org/wiki/File:8-7_40-15..._Wimbledon_2019.png
+- Licenza: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+- Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
+
+## Rosso a Monza
+
+- File: f1-2019.webp
+- Soggetto e contesto: Leclerc davanti a Hamilton · Gran Premio d’Italia, 8 settembre 2019
+- Autore / crediti: Interceptor73
+- Origine: https://commons.wikimedia.org/wiki/File:Charles_Leclerc,_Ferrari_SF90_holds_off_Lewis_Hamilton,_Mercedes_F1_W10,_2019_Italian_Grand_Prix,_Monza,_8th_September.jpg
+- Licenza: CC BY 2.0 — https://creativecommons.org/licenses/by/2.0/
+- Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
+
+## Il giallo dello Squalo
+
+- File: ciclismo-2014.webp
+- Soggetto e contesto: Nibali in maglia gialla · Tour de France, 20ª tappa, 26 luglio 2014
+- Autore / crediti: Cjp24
+- Origine: https://commons.wikimedia.org/wiki/File:Vincenzo_Nibali,_2014_Tour_de_France,_Stage_20.jpg
+- Licenza: CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
+- Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
+
+## Rosa al primo colpo
+
+- File: ciclismo-2024.webp
+- Soggetto e contesto: Pogačar in maglia rosa · Giro d’Italia, 18ª tappa, 23 maggio 2024
+- Autore / crediti: Amarvudol
+- Origine: https://commons.wikimedia.org/wiki/File:Tadej_Poga%C4%8Dar,_Giro_d%27Italia_23_maggio_2024.jpg
+- Licenza: CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
+- Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
+
+## Ai blocchi
+
+- File: olimpiadi-2012.webp
+- Soggetto e contesto: Finale dei 100 metri · Giochi olimpici di Londra 2012
+- Autore / crediti: Darren Wilkinson
+- Origine: https://commons.wikimedia.org/wiki/File:Mens_100m_Final_-_On_your_marks_-_2012_Olympics.jpg
+- Licenza: CC BY-SA 2.0 — https://creativecommons.org/licenses/by-sa/2.0/
+- Modifiche: ridimensionamento e ricodifica WebP; nessun ulteriore ritaglio o ritocco.
