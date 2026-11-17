@@ -1165,10 +1165,13 @@ showCareer();
 const factKeys=q=>[...new Set([q.id,...(q.factIds||[])])];
 const sessionEventKeys=q=>[...new Set([q.event,...(q.relatedEvents||[])].filter(Boolean))];
 function pick(pool,n,level,key,settings={}){
- const globalSeen=historyFor('all_sports'),seen=[...historyFor(key),...globalSeen];
+ const globalSeen=historyFor('all_sports'),seen=globalSeen.length?globalSeen:historyFor(key);
+ let rotationCounts={};try{const saved=JSON.parse(localStorage.getItem('smq_question_rotation_v1')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))rotationCounts=saved}catch(e){}
+ const seenIds=new Set(seen);
+ const drawCount=q=>Number.isSafeInteger(rotationCounts[q.id])&&rotationCounts[q.id]>=0?rotationCounts[q.id]:Number(seenIds.has(q.id));
  const last=new Map(seen.map((id,index)=>[id,index]));
  // Text mentioning a player does not mean their photograph or a whole grid has been played.
- const noveltyKeys=q=>q.photo||q.format==='griglia'?[q.id]:factKeys(q);
+ const noveltyKeys=q=>[q.id];
  const age=q=>Math.max(-1,...noveltyKeys(q).map(id=>last.has(id)?last.get(id):-1));
  const recentCut=seen.length-30,isRecent=q=>age(q)>=0&&age(q)>=recentCut;
  // Related facts stay separate questions, but do not crowd the same sessions.
@@ -1182,15 +1185,15 @@ function pick(pool,n,level,key,settings={}){
  // Rotate the kind of crossing and the clubs, within the same novelty/recency tier.
  // Other formats retain their normal chance and unseen content stays first.
  const candidate=list=>{
+  const minimum=Math.min(...list.map(drawCount));list=list.filter(q=>drawCount(q)===minimum);
+  if(minimum>0){const oldest=Math.min(...list.map(age));list=list.filter(q=>age(q)===oldest)}
   const first=list[0];if(first?.format!=='griglia')return first;
   return list.filter(q=>q.format==='griglia'&&age(q)===age(first)).sort((a,b)=>(familyLast.get(quizGridFamily(a))??-1)-(familyLast.get(quizGridFamily(b))??-1)||clubRecency(a)-clubRecency(b)||(pairLast.get(quizGridClubPair(a))??-1)-(pairLast.get(quizGridClubPair(b))??-1))[0];
  };
  const recentGroups=new Set(rotationSeen.map(id=>byId.get(id)?.rotationGroup).filter(Boolean));
- const freshPool=pool.filter(q=>!q.rotationGroup||!recentGroups.has(q.rotationGroup));
  const identities=list=>new Set(list.map(q=>q.rotationGroup||q.id)).size;
- const canRotate=identities(freshPool)>=n&&(!settings.balanced||[...new Set(pool.map(q=>q.cat))].every(cat=>identities(freshPool.filter(q=>q.cat===cat))>=Math.ceil(n/new Set(pool.map(q=>q.cat)).size)));
- // Unseen facts take precedence over both rotation spacing and format quotas.
- const options=shuffled(canRotate?pool.filter(q=>age(q)<0||!q.rotationGroup||!recentGroups.has(q.rotationGroup)):pool).sort((a,b)=>age(a)-age(b)||Number(recentGroups.has(a.rotationGroup))-Number(recentGroups.has(b.rotationGroup)));
+ // Unseen question IDs take precedence; related facts only constrain the current session.
+ const options=shuffled(pool).sort((a,b)=>age(a)-age(b)||Number(recentGroups.has(a.rotationGroup))-Number(recentGroups.has(b.rotationGroup)));
  const usedGroups=new Set(),separateGroups=identities(pool)>=n;
  const separateEvents=new Set(pool.map(q=>q.event||q.id)).size>=n;
  const groupAvailable=q=>(!separateGroups||!q.rotationGroup||!usedGroups.has(q.rotationGroup))&&(!separateEvents||sessionEventKeys(q).every(event=>!events[event]));
@@ -1249,8 +1252,7 @@ function pick(pool,n,level,key,settings={}){
    if(candidates.length)take(candidate(candidates));
   }
  }
- // Le domande già viste tornano rimescolate: si pesca a caso nella metà vista da più tempo,
- // così il secondo giro non ripropone gli stessi gruppi di domande.
+ // Repeated questions are balanced by actual draw count, then by recency.
  const seenAges=pool.map(age).filter(value=>value>=0).sort((x,y)=>x-y),olderHalf=seenAges.length?seenAges[Math.floor((seenAges.length-1)/2)]:-1;
  const fill=(source,old,limit=Infinity)=>{
   let taken=0;
@@ -1275,7 +1277,7 @@ function pick(pool,n,level,key,settings={}){
      const fmt=q.format||'classica',count=formats[fmt]||0;
      return (count===0&&fmt!=='classica'?20:0)-count*8;
     };
-    if(old&&round<2)candidates=shuffled(candidates).sort((a,b)=>priority(b)-priority(a));
+    if(old&&round<2)candidates=shuffled(candidates).sort((a,b)=>drawCount(a)-drawCount(b)||age(a)-age(b)||priority(b)-priority(a));
     else candidates.sort((a,b)=>old?(age(a)-age(b))||(priority(b)-priority(a)):priority(b)-priority(a));
     take(candidate(candidates));taken++;
    }
@@ -1287,8 +1289,11 @@ function pick(pool,n,level,key,settings={}){
  // Scorta del livello quasi finita: fino a tre domande classiche nuove dal livello vicino.
  if(chosen.length<n&&settings.reserve?.length)fill(shuffled(settings.reserve.filter(q=>age(q)<0&&!q.photo&&!isSpecial(q))),false,Math.min(3,Math.floor(n/3)));
  fill(options,true);
- const ids=[...usedFacts],keys=new Set(ids);
- saveSeen(key,[...seen.filter(id=>!keys.has(id)),...ids]);saveSeen('all_sports',[...globalSeen.filter(id=>!keys.has(id)),...ids]);
+ const ids=chosen.map(q=>q.id),keys=new Set(ids);
+ // Record actual draws, never related-fact aliases; keep contextual and global history separate.
+ saveSeen(key,[...historyFor(key).filter(id=>!keys.has(id)),...ids]);saveSeen('all_sports',[...globalSeen.filter(id=>!keys.has(id)),...ids]);
+ const nextCounts={};for(const q of questions){const count=drawCount(q);if(count||keys.has(q.id))nextCounts[q.id]=count+Number(keys.has(q.id))}
+ try{localStorage.setItem('smq_question_rotation_v1',JSON.stringify(nextCounts))}catch(e){}
  saveSeen('last_'+key,chosen.map(q=>q.id));
  saveSeen('editorial_recent',[...rotationSeen,...chosen.map(q=>q.id)].slice(-30));
  if(gridCount)saveSeen('quiz_grid_recent',[...recentGrids.map(q=>q.id),...chosen.filter(q=>q.format==='griglia').map(q=>q.id)].slice(-24));
