@@ -1477,7 +1477,7 @@ function renderDailyInvite(){
  el('dailyInviteEdition').textContent='#'+dailyNumber(key);
  status.replaceChildren();card.setAttribute('data-completed',String(Boolean(r)));
  if(r){
-  title.textContent='Sfida completata';el('dailyInviteCount').textContent=r.score+'/'+r.total;
+  title.textContent='Sfida di oggi completata!';el('dailyInviteCount').textContent=r.score+'/'+r.total;
   text.textContent=r.score+' su '+r.total+' risposte giuste.\nDomani arriva una nuova sfida.';
   const sq=document.createElement('span');sq.className='dailySquares';sq.textContent=dailySquares(r.kinds);sq.setAttribute('aria-hidden','true');status.append(sq);
   const streak=dailyStreakText(dailyStreak(key));if(streak)status.append(document.createTextNode(streak));
